@@ -1,0 +1,8 @@
+{
+  "name": "Noise Monitor",
+  "description": "A helpful tool to monitor room volume and gently remind kids to be quieter when things get too loud. Features a customizable volume threshold and message.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
