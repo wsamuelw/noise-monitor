@@ -63,27 +63,24 @@ export const useAudioAnalyzer = () => {
     setError(null);
     
     try {
-      // 1. MUST create and resume AudioContext SYNCHRONOUSLY before await. 
-      // If we wait for getUserMedia first, iOS Safari discards the user gesture.
+      // 1. Request microphone BEFORE AudioContext to prevent iOS sample-rate mismatch bug.
+      // Do not use advanced constraints (echoCancellation, etc.) as they break iOS Safari silently.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      // 2. iOS Hack: Force the stream to play through a muted HTML5 element.
+      // Without this, iOS Safari will sometimes return an array of zeros from the analyser.
+      const iOSAudioEngineHack = new Audio();
+      iOSAudioEngineHack.muted = true;
+      iOSAudioEngineHack.srcObject = stream;
+      iOSAudioEngineHack.play().catch(e => console.warn("Background audio hack rejected by iOS, skipping...", e));
+      
+      // 3. Create AudioContext
       const audioCtxConstructor = window.AudioContext || (window as any).webkitAudioContext;
       const context = new audioCtxConstructor();
       audioContextRef.current = context;
-
-      // Resume context immediately 
-      if (context.state === 'suspended') {
-        await context.resume();
-      }
-
-      // 2. Now request the microphone stream
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          echoCancellation: false, 
-          noiseSuppression: false, 
-          autoGainControl: false 
-        } 
-      });
-      streamRef.current = stream;
       
+      // 4. Setup graph
       const analyser = context.createAnalyser();
       analyser.fftSize = 256;
       analyserRef.current = analyser;
@@ -91,16 +88,19 @@ export const useAudioAnalyzer = () => {
       const source = context.createMediaStreamSource(stream);
       sourceRef.current = source;
 
-      // 3. Bulletproof iOS Safari Hack:
-      // Safari sometimes aggressively throttles or mutes the AudioNode graph
-      // if it does not eventually connect to the context's destination.
-      // We route it to destination but clamp the volume to 0 so we don't hear feedback.
+      // 5. Connect source directly to analyser
+      source.connect(analyser);
+      
+      // Bulletproof iOS Safari Hack: Connect to destination with 0 gain
       const silentGain = context.createGain();
       silentGain.gain.value = 0;
-      
-      source.connect(analyser);
       analyser.connect(silentGain);
       silentGain.connect(context.destination);
+
+      // 6. Finally, force resume the context (allowed after getUserMedia resolves)
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
       
       setStatus(AppStatus.Listening);
       analyze();
