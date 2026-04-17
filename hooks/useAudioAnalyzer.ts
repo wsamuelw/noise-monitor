@@ -63,17 +63,26 @@ export const useAudioAnalyzer = () => {
     setError(null);
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
+      // 1. MUST create and resume AudioContext SYNCHRONOUSLY before await. 
+      // If we wait for getUserMedia first, iOS Safari discards the user gesture.
       const audioCtxConstructor = window.AudioContext || (window as any).webkitAudioContext;
       const context = new audioCtxConstructor();
       audioContextRef.current = context;
 
-      // Crucial for iOS WebView/Safari: resume context after user gesture
+      // Resume context immediately 
       if (context.state === 'suspended') {
         await context.resume();
       }
+
+      // 2. Now request the microphone stream
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { 
+          echoCancellation: false, 
+          noiseSuppression: false, 
+          autoGainControl: false 
+        } 
+      });
+      streamRef.current = stream;
       
       const analyser = context.createAnalyser();
       analyser.fftSize = 256;
@@ -82,7 +91,16 @@ export const useAudioAnalyzer = () => {
       const source = context.createMediaStreamSource(stream);
       sourceRef.current = source;
 
+      // 3. Bulletproof iOS Safari Hack:
+      // Safari sometimes aggressively throttles or mutes the AudioNode graph
+      // if it does not eventually connect to the context's destination.
+      // We route it to destination but clamp the volume to 0 so we don't hear feedback.
+      const silentGain = context.createGain();
+      silentGain.gain.value = 0;
+      
       source.connect(analyser);
+      analyser.connect(silentGain);
+      silentGain.connect(context.destination);
       
       setStatus(AppStatus.Listening);
       analyze();
