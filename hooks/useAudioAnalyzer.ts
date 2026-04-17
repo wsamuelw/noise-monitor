@@ -66,8 +66,14 @@ export const useAudioAnalyzer = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtxConstructor = window.AudioContext || (window as any).webkitAudioContext;
+      const context = new audioCtxConstructor();
       audioContextRef.current = context;
+
+      // Crucial for iOS WebView/Safari: resume context after user gesture
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
       
       const analyser = context.createAnalyser();
       analyser.fftSize = 256;

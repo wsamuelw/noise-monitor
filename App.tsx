@@ -33,6 +33,15 @@ const App: React.FC = () => {
     stopListening();
     cancel();
   };
+
+  const handleStart = () => {
+    // iOS Safari requires SpeechSynthesis and AudioContext to be explicitly 
+    // initialized during a direct user interaction (click), otherwise it blocks them silently.
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+    }
+    startListening();
+  };
   
   const statusText = () => {
       if (error) return <p className="text-rose-500 font-medium text-center text-sm">{error}</p>;
@@ -99,7 +108,7 @@ const App: React.FC = () => {
         
         <footer className="pt-4 pb-2 space-y-6">
           <button
-            onClick={isListening ? handleStop : startListening}
+            onClick={isListening ? handleStop : handleStart}
             className={`w-full text-xl font-bold text-white rounded-[2rem] px-6 py-5 text-center transition-all duration-200 shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] active:scale-[0.98] ${
               isListening 
                 ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30' 
