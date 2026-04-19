@@ -40,18 +40,21 @@ export const useAudioAnalyzer = () => {
 
   const analyze = useCallback(() => {
     if (analyserRef.current) {
+      // Use getByteTimeDomainData instead of getByteFrequencyData for better mobile compatibility
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-      analyserRef.current.getByteFrequencyData(dataArray);
+      analyserRef.current.getByteTimeDomainData(dataArray);
       
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
+        // Calculate RMS (Root Mean Square) for more accurate volume detection
+        const value = (dataArray[i] - 128) / 128; // Normalize to -1 to 1
+        sum += value * value;
       }
-      const average = sum / dataArray.length;
+      const rms = Math.sqrt(sum / dataArray.length);
       
-      // Scale to a 0-100 range
-      const scaledVolume = (average / 255) * 150; 
-      setVolume(Math.min(100, scaledVolume));
+      // Scale RMS to 0-100 range (typical RMS values are 0-0.5 for normal speech)
+      const scaledVolume = Math.min(100, (rms / 0.5) * 100);
+      setVolume(scaledVolume);
     }
     animationFrameRef.current = requestAnimationFrame(analyze);
   }, []);
@@ -63,41 +66,41 @@ export const useAudioAnalyzer = () => {
     setError(null);
     
     try {
-      // 1. Request microphone BEFORE AudioContext to prevent iOS sample-rate mismatch bug.
-      // Do not use advanced constraints (echoCancellation, etc.) as they break iOS Safari silently.
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 1. Request microphone with mobile-optimized constraints
+      // iOS Safari is very strict - we must use minimal constraints
+      // Some iOS versions reject streams with echoCancellation/noiseSuppression set to false
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          channelCount: 1,
+          sampleRate: 44100
+        } 
+      });
       streamRef.current = stream;
 
-      // 2. iOS Hack: Force the stream to play through a muted HTML5 element.
-      // Without this, iOS Safari will sometimes return an array of zeros from the analyser.
-      const iOSAudioEngineHack = new Audio();
-      iOSAudioEngineHack.muted = true;
-      iOSAudioEngineHack.srcObject = stream;
-      iOSAudioEngineHack.play().catch(e => console.warn("Background audio hack rejected by iOS, skipping...", e));
-      
-      // 3. Create AudioContext
+      // 2. Create AudioContext BEFORE connecting anything (critical for iOS)
+      // Use webkitAudioContext for older iOS Safari versions
       const audioCtxConstructor = window.AudioContext || (window as any).webkitAudioContext;
+      if (!audioCtxConstructor) {
+        throw new Error('Web Audio API not supported');
+      }
       const context = new audioCtxConstructor();
       audioContextRef.current = context;
       
-      // 4. Setup graph
+      // 3. Setup analyser with mobile-friendly settings
       const analyser = context.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 2048; // Larger FFT size for better accuracy
+      analyser.smoothingTimeConstant = 0.85; // Smooth out rapid volume changes
       analyserRef.current = analyser;
 
+      // 4. Create source from stream
       const source = context.createMediaStreamSource(stream);
       sourceRef.current = source;
 
-      // 5. Connect source directly to analyser
+      // 5. Connect source directly to analyser (no destination needed for analysis)
       source.connect(analyser);
       
-      // Bulletproof iOS Safari Hack: Connect to destination with 0 gain
-      const silentGain = context.createGain();
-      silentGain.gain.value = 0;
-      analyser.connect(silentGain);
-      silentGain.connect(context.destination);
-
-      // 6. Finally, force resume the context (allowed after getUserMedia resolves)
+      // 6. Resume context if suspended (required for iOS Safari)
+      // iOS requires this to happen within a user gesture event
       if (context.state === 'suspended') {
         await context.resume();
       }
@@ -110,9 +113,12 @@ export const useAudioAnalyzer = () => {
       if (err instanceof Error && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
           setStatus(AppStatus.PermissionDenied);
           setError('Microphone access was denied. Please allow access in your browser settings.');
+      } else if (err instanceof Error && err.name === 'NotSupportedError') {
+          setStatus(AppStatus.Error);
+          setError('Audio configuration not supported. Try updating your browser.');
       } else {
           setStatus(AppStatus.Error);
-          setError('Could not access the microphone.');
+          setError('Could not access the microphone. Please ensure you\'re using HTTPS.');
       }
     }
   }, [status, stopListening, analyze]);

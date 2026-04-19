@@ -1,10 +1,10 @@
-
 import { useRef, useCallback, useEffect, useState } from 'react';
 
 export const useSpeechSynthesizer = () => {
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   useEffect(() => {
     // Check for browser support on mount
     if ('speechSynthesis' in window) {
@@ -18,6 +18,7 @@ export const useSpeechSynthesizer = () => {
         const availableVoices = synthRef.current.getVoices();
         if (availableVoices.length > 0) {
             setVoices(availableVoices);
+            setIsInitialized(true);
         }
       }
     };
@@ -45,8 +46,13 @@ export const useSpeechSynthesizer = () => {
   }, []);
 
   const speak = useCallback((text: string) => {
-    if (!synthRef.current || !text || synthRef.current.speaking) {
+    if (!synthRef.current || !text) {
       return;
+    }
+    
+    // Cancel any ongoing speech before starting new one (important for mobile)
+    if (synthRef.current.speaking) {
+      synthRef.current.cancel();
     }
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -66,7 +72,10 @@ export const useSpeechSynthesizer = () => {
     utterance.rate = 0.9;
     utterance.pitch = 1.1; 
     
-    synthRef.current.speak(utterance);
+    // iOS Safari requires a small delay sometimes
+    setTimeout(() => {
+      synthRef.current?.speak(utterance);
+    }, 50);
   }, [voices]);
 
   const cancel = useCallback(() => {
@@ -75,5 +84,5 @@ export const useSpeechSynthesizer = () => {
     }
   }, []);
 
-  return { speak, cancel };
+  return { speak, cancel, isInitialized };
 };
