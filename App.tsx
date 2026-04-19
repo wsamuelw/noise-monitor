@@ -38,7 +38,11 @@ const App: React.FC = () => {
     // iOS Safari requires SpeechSynthesis and AudioContext to be explicitly 
     // initialized during a direct user interaction (click), otherwise it blocks them silently.
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+      // Cancel any pending utterances first
+      window.speechSynthesis.cancel();
+      // Speak an empty utterance to "warm up" the speech engine on iOS
+      const warmupUtterance = new SpeechSynthesisUtterance('');
+      window.speechSynthesis.speak(warmupUtterance);
     }
     startListening();
   };
