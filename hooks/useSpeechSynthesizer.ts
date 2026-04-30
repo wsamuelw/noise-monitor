@@ -47,6 +47,7 @@ export const useSpeechSynthesizer = () => {
 
   const speak = useCallback((text: string) => {
     if (!synthRef.current || !text) {
+      console.warn('Speech synthesis not available or no text provided');
       return;
     }
     
@@ -66,16 +67,23 @@ export const useSpeechSynthesizer = () => {
 
     if (selectedVoice) {
         utterance.voice = selectedVoice;
+    } else {
+      // iOS fix: explicitly set lang if no voice found
+      utterance.lang = 'en-US';
     }
 
-    utterance.lang = 'en-US';
     utterance.rate = 0.9;
-    utterance.pitch = 1.1; 
+    utterance.pitch = 1.05; 
     
     // iOS Safari requires a small delay sometimes
+    // Also, iOS may require user interaction - ensure this is called from a user gesture
     setTimeout(() => {
-      synthRef.current?.speak(utterance);
-    }, 50);
+      try {
+        synthRef.current?.speak(utterance);
+      } catch (e) {
+        console.error('Speech synthesis failed:', e);
+      }
+    }, 100);
   }, [voices]);
 
   const cancel = useCallback(() => {

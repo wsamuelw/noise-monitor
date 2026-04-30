@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#eef2ff" />
     <title>Noise Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -28,6 +29,7 @@
         -webkit-touch-callout: none;
         -webkit-user-select: none;
         user-select: none;
+        -webkit-tap-highlight-color: transparent;
       }
       
       /* Allow text selection on inputs */
@@ -36,9 +38,27 @@
         user-select: text;
       }
 
-      /* Prevent zoom on double-tap on iOS */
+      /* Prevent zoom on double-tap and ensure proper touch handling */
       * {
         touch-action: manipulation;
+      }
+      
+      /* Ensure body takes full height on iOS */
+      html, body {
+        height: 100%;
+        width: 100%;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Fix for iOS Safari address bar */
+      body {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+      }
+      
+      html {
+        height: -webkit-fill-available;
       }
 
       /* General slider reset */
@@ -72,6 +92,7 @@
         margin-top: -16px; /* center thumb on track */
         touch-action: none; /* Prevent scroll interference on mobile */
         cursor: grab;
+        -webkit-tap-highlight-color: transparent;
       }
       .volume-slider:active::-webkit-slider-thumb {
         cursor: grabbing;
@@ -107,19 +128,27 @@
         min-height: 48px;
         min-width: 48px;
         touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
       
       /* Fix for iOS Safari to prevent page zoom on orientation change */
       @supports (-webkit-touch-callout: none) {
         .no-zoom-on-rotate {
           min-height: 100vh;
+          min-height: -webkit-fill-available;
           width: 100vw;
         }
+      }
+      
+      /* Improve input focus visibility on iOS */
+      input:focus {
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
       }
     </style>
 </head>
 <body class="bg-indigo-50/50 no-zoom-on-rotate">
-    <div id="root"></div>
+    <div id="root" style="height: 100%; min-height: -webkit-fill-available;"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -37,6 +37,13 @@ const App: React.FC = () => {
   const handleStart = () => {
     // iOS Safari requires SpeechSynthesis and AudioContext to be explicitly 
     // initialized during a direct user interaction (click), otherwise it blocks them silently.
+    
+    // First, ensure we're in a secure context (HTTPS)
+    if (!window.isSecureContext) {
+      alert('Microphone access requires HTTPS. Please use a secure connection.');
+      return;
+    }
+    
     if ('speechSynthesis' in window) {
       // Cancel any pending utterances first
       window.speechSynthesis.cancel();
@@ -49,7 +56,7 @@ const App: React.FC = () => {
     // Some iOS versions need a small delay after speech synthesis
     setTimeout(() => {
       startListening();
-    }, 100);
+    }, 50);
   };
   
   const statusText = () => {
@@ -73,7 +80,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 font-sans text-slate-800">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 font-sans text-slate-800" style={{ minHeight: '-webkit-fill-available' }}>
       <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-6 sm:p-10 space-y-10 relative">
         <header className="text-center space-y-3 pt-2">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-500 mb-2">
@@ -111,6 +118,11 @@ const App: React.FC = () => {
                 className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 text-slate-800 placeholder-slate-400 text-lg transition-all"
                 placeholder="e.g. Quiet time, please"
                 disabled={!isListening}
+                inputMode="text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck="false"
               />
             </div>
           </div>
@@ -124,6 +136,7 @@ const App: React.FC = () => {
                 ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30' 
                 : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'
             }`}
+            type="button"
           >
             {isListening ? 'Stop Monitoring' : 'Start Monitoring'}
           </button>

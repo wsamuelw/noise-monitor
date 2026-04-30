@@ -123,15 +123,19 @@ const scaledVolume = Math.min(100, (rms / 0.5) * 100);
 ### iOS-Specific Optimizations
 
 - ✅ `webkitAudioContext` fallback for older iOS versions
-- ✅ Minimal microphone constraints (no echoCancellation/noiseSuppression flags)
-- ✅ Speech synthesis "warm-up" on user interaction with proper timing delays
+- ✅ Minimal microphone constraints (`audio: true`) to avoid iOS rejection
+- ✅ Fallback with echoCancellation disabled for problematic iOS versions
+- ✅ Speech synthesis "warm-up" on user interaction with proper timing delays (100ms)
 - ✅ Context resume within user gesture handler
-- ✅ Larger FFT size (2048) for better accuracy
+- ✅ Smaller FFT size (512) for better mobile performance
 - ✅ Touch-optimized UI with 44px+ tap targets (Apple Human Interface Guidelines compliant)
-- ✅ Viewport meta tags to prevent accidental zoom and scaling
+- ✅ Viewport meta tags with `viewport-fit=cover` for iPhone notch support
 - ✅ Safe area insets support for iPhone notch and home indicator
+- ✅ `-webkit-fill-available` height fix for iOS Safari address bar
 - ✅ Orientation change handling for portrait/landscape modes
 - ✅ Touch event handlers for smoother slider interaction on mobile
+- ✅ Transparent tap highlights for cleaner mobile UX
+- ✅ HTTPS detection with user-friendly alert message
 
 ## 🏗️ Project Structure
 
@@ -201,16 +205,25 @@ const scaledVolume = Math.min(100, (rms / 0.5) * 100);
 - The app handles this automatically - just make sure to tap Start
 - Try increasing device volume
 - Ensure you're on HTTPS (required for full functionality)
+- The app includes a 100ms delay after speech synthesis warm-up for iOS compatibility
 
 **"App zooms in when tapping buttons"**
-- This should be prevented by viewport meta tags
+- This should be prevented by viewport meta tags with `viewport-fit=cover`
 - If it happens, try disabling "Double-tap to zoom" in iOS Settings > Safari
-- The app uses touch-action: manipulation to prevent zoom conflicts
+- The app uses `touch-action: manipulation` and transparent tap highlights to prevent zoom conflicts
 
 **"Slider is hard to adjust on mobile"**
-- The slider has been optimized with larger touch targets
+- The slider has been optimized with larger touch targets (44px)
 - Try dragging slowly across the slider track
-- The entire slider height (44px) is touch-sensitive
+- The entire slider height is touch-sensitive
+- Touch events are properly handled to prevent scroll interference
+
+**"Microphone not working on iOS"**
+- Ensure you're using HTTPS (mandatory for iOS microphone access)
+- The app now tries minimal constraints first (`audio: true`) for maximum iOS compatibility
+- If initial request fails, it falls back to echoCancellation disabled mode
+- Make sure to tap "Start Monitoring" directly (auto-play is blocked by iOS)
+- Check that microphone permission is granted in Settings > Safari > Camera & Microphone
 
 ## 📄 License
 

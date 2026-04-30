@@ -71,15 +71,26 @@ export const useAudioAnalyzer = () => {
         throw new Error('Media devices API not available. Please use HTTPS.');
       }
 
-      // 1. Request microphone with mobile-optimized constraints
-      // iOS Safari is very strict - we must use minimal constraints
-      // Some iOS versions reject streams with echoCancellation/noiseSuppression set to false
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          channelCount: 1,
-          sampleRate: 44100
-        } 
-      });
+      // 1. Request microphone with iOS-compatible constraints
+      // iOS Safari is very strict - minimal constraints work best
+      // Avoid specifying sampleRate/channelCount as some iOS versions reject them
+      let stream: MediaStream;
+      try {
+        // Try with minimal constraints first (most compatible with iOS)
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: true
+        });
+      } catch (initialError) {
+        console.warn('Initial audio request failed, trying with echoCancellation disabled:', initialError);
+        // Fallback: some iOS versions need echoCancellation explicitly disabled
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        });
+      }
       streamRef.current = stream;
 
       // 2. Create AudioContext BEFORE connecting anything (critical for iOS)
@@ -93,8 +104,8 @@ export const useAudioAnalyzer = () => {
       
       // 3. Setup analyser with mobile-friendly settings
       const analyser = context.createAnalyser();
-      analyser.fftSize = 2048; // Larger FFT size for better accuracy
-      analyser.smoothingTimeConstant = 0.85; // Smooth out rapid volume changes
+      analyser.fftSize = 512; // Smaller FFT size for better mobile performance
+      analyser.smoothingTimeConstant = 0.8; // Smooth out rapid volume changes
       analyserRef.current = analyser;
 
       // 4. Create source from stream
