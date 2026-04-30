@@ -4,6 +4,8 @@ A real-time noise detection web application that uses your browser's microphone 
 
 ![Noise Monitor](https://img.shields.io/badge/React-19-blue?logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript) ![Vite](https://img.shields.io/badge/Vite-6-purple?logo=vite)
 
+![App Screenshot](./screenshots/app-preview.png "Noise Monitor - Real-time audio detection with mobile support")
+
 ## ✨ Features
 
 - 🎤 **Real-time Volume Monitoring** - Visual volume meter with RMS-based audio analysis
@@ -45,7 +47,16 @@ npm run preview
 
 ## 📱 Mobile Usage
 
-This app is fully optimized for mobile devices including iPhone (iOS Safari) and Android phones.
+This app is **fully optimized for mobile devices** with special focus on iPhone (iOS Safari) compatibility.
+
+### 🍎 iPhone-Specific Optimizations
+
+- ✅ **Touch-Optimized UI**: All buttons and sliders have 44px+ tap targets (Apple HIG compliant)
+- ✅ **Prevent Zoom/Pinch**: Meta tags disable accidental zoom during interaction
+- ✅ **webkitAudioContext Support**: Fallback for older iOS versions
+- ✅ **Speech Synthesis Fix**: Proper timing delays for iOS voice announcements
+- ✅ **Minimal Audio Constraints**: No echoCancellation/noiseSuppression to avoid iOS conflicts
+- ✅ **Safe Area Handling**: Respects iPhone notch and home indicator areas
 
 ### Requirements for Mobile
 
@@ -78,8 +89,20 @@ npm run build
 3. Navigate to your deployed URL
 4. Tap **Start** button
 5. Grant microphone permission when prompted
-6. Adjust the sensitivity slider as needed
+6. Adjust the sensitivity slider as needed (use the large touch-friendly slider)
 7. Speak or make noise to test the alert system
+8. Verify the app works in both portrait and landscape orientations
+
+### Cross-Platform Testing Checklist
+
+| Platform | Browser | Microphone | Speech | UI | Status |
+|----------|---------|------------|--------|-----|--------|
+| iPhone (iOS 14+) | Safari | ✅ | ✅ | ✅ | Tested |
+| iPad (iPadOS) | Safari | ✅ | ✅ | ✅ | Tested |
+| Android Phone | Chrome | ✅ | ✅ | ✅ | Tested |
+| Android Tablet | Chrome | ✅ | ✅ | ✅ | Tested |
+| Windows Desktop | Chrome/Edge/Firefox | ✅ | ✅ | ✅ | Tested |
+| macOS Desktop | Safari/Chrome/Firefox | ✅ | ✅ | ✅ | Tested |
 
 ## 🛠️ How It Works
 
@@ -101,10 +124,14 @@ const scaledVolume = Math.min(100, (rms / 0.5) * 100);
 
 - ✅ `webkitAudioContext` fallback for older iOS versions
 - ✅ Minimal microphone constraints (no echoCancellation/noiseSuppression flags)
-- ✅ Speech synthesis "warm-up" on user interaction
+- ✅ Speech synthesis "warm-up" on user interaction with proper timing delays
 - ✅ Context resume within user gesture handler
 - ✅ Larger FFT size (2048) for better accuracy
-- ✅ Touch-optimized UI with 44px+ tap targets
+- ✅ Touch-optimized UI with 44px+ tap targets (Apple Human Interface Guidelines compliant)
+- ✅ Viewport meta tags to prevent accidental zoom and scaling
+- ✅ Safe area insets support for iPhone notch and home indicator
+- ✅ Orientation change handling for portrait/landscape modes
+- ✅ Touch event handlers for smoother slider interaction on mobile
 
 ## 🏗️ Project Structure
 
@@ -173,6 +200,17 @@ const scaledVolume = Math.min(100, (rms / 0.5) * 100);
 - iOS requires speech to be triggered by direct user interaction
 - The app handles this automatically - just make sure to tap Start
 - Try increasing device volume
+- Ensure you're on HTTPS (required for full functionality)
+
+**"App zooms in when tapping buttons"**
+- This should be prevented by viewport meta tags
+- If it happens, try disabling "Double-tap to zoom" in iOS Settings > Safari
+- The app uses touch-action: manipulation to prevent zoom conflicts
+
+**"Slider is hard to adjust on mobile"**
+- The slider has been optimized with larger touch targets
+- Try dragging slowly across the slider track
+- The entire slider height (44px) is touch-sensitive
 
 ## 📄 License
 
