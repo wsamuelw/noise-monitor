@@ -50,40 +50,50 @@ export const useSpeechSynthesizer = () => {
       console.warn('Speech synthesis not available or no text provided');
       return;
     }
-    
+
     // Cancel any ongoing speech before starting new one (important for mobile)
     if (synthRef.current.speaking) {
       synthRef.current.cancel();
     }
 
     const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Strict priority: "Karen" (en). Provide fallback for Non-Apple platforms where Karen doesn't exist
+
+    // Voice selection: try platform voices first, then generic fallbacks
     const selectedVoice = voices.find(voice => voice.name.includes('Karen') && voice.lang.startsWith('en'))
-      || voices.find(voice => voice.name === 'Samantha') 
+      || voices.find(voice => voice.name === 'Samantha')
       || voices.find(voice => voice.name === 'Google US English' && voice.lang === 'en-US')
       || voices.find(voice => voice.name.includes('Female') && voice.lang.startsWith('en'))
-      || voices.find(voice => voice.lang.startsWith('en') && voice.default);
+      || voices.find(voice => voice.lang.startsWith('en') && voice.default)
+      || voices.find(voice => voice.lang.startsWith('en'));
 
     if (selectedVoice) {
-        utterance.voice = selectedVoice;
+      utterance.voice = selectedVoice;
     } else {
-      // iOS fix: explicitly set lang if no voice found
       utterance.lang = 'en-US';
     }
 
     utterance.rate = 0.9;
-    utterance.pitch = 1.05; 
-    
-    // iOS Safari requires a small delay sometimes
-    // Also, iOS may require user interaction - ensure this is called from a user gesture
-    setTimeout(() => {
+    utterance.pitch = 1.05;
+
+    // iOS Safari needs speech triggered in a user gesture context.
+    // The 150ms delay lets the AudioContext fully initialise first.
+    // Cancel any prior pending utterances that may have queued from earlier fires.
+    const doSpeak = () => {
       try {
-        synthRef.current?.speak(utterance);
+        const synth = synthRef.current;
+        if (!synth) return;
+        // iOS can queue up stale utterances — clear them
+        if (synth.speaking) {
+          synth.cancel();
+        }
+        synth.speak(utterance);
       } catch (e) {
         console.error('Speech synthesis failed:', e);
       }
-    }, 100);
+    };
+
+    // Small delay so AudioContext is fully resumed before speech fires
+    setTimeout(doSpeak, 150);
   }, [voices]);
 
   const cancel = useCallback(() => {

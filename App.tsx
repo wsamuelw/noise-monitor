@@ -35,28 +35,23 @@ const App: React.FC = () => {
   };
 
   const handleStart = () => {
-    // iOS Safari requires SpeechSynthesis and AudioContext to be explicitly 
-    // initialized during a direct user interaction (click), otherwise it blocks them silently.
-    
-    // First, ensure we're in a secure context (HTTPS)
     if (!window.isSecureContext) {
       alert('Microphone access requires HTTPS. Please use a secure connection.');
       return;
     }
-    
+
+    // iOS Safari requires AudioContext and SpeechSynthesis to be created/resumed
+    // inside the SAME user-gesture call stack. The speech warmup primes iOS
+    // so that AudioContext.resume() won't be silently blocked.
     if ('speechSynthesis' in window) {
-      // Cancel any pending utterances first
       window.speechSynthesis.cancel();
-      // Speak an empty utterance to "warm up" the speech engine on iOS
-      const warmupUtterance = new SpeechSynthesisUtterance('');
-      window.speechSynthesis.speak(warmupUtterance);
+      const warmup = new SpeechSynthesisUtterance('');
+      warmup.lang = 'en-US';
+      window.speechSynthesis.speak(warmup);
     }
-    
-    // Additional iOS fix: ensure AudioContext can be created
-    // Some iOS versions need a small delay after speech synthesis
-    setTimeout(() => {
-      startListening();
-    }, 50);
+
+    // Do NOT use setTimeout here — it breaks the user gesture chain on iOS.
+    startListening();
   };
   
   const statusText = () => {
