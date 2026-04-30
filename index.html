@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
     <title>Noise Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -10,6 +13,15 @@
         darkMode: 'class'
       }
     </script>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/"
+  }
+}
+</script>
     <style>
       /* Prevent text selection on mobile for better UX */
       * {
@@ -24,6 +36,11 @@
         user-select: text;
       }
 
+      /* Prevent zoom on double-tap on iOS */
+      * {
+        touch-action: manipulation;
+      }
+
       /* General slider reset */
       .volume-slider {
         -webkit-appearance: none;
@@ -36,6 +53,7 @@
         width: 100%;
         height: 100%;
         margin: 0;
+        z-index: 10;
       }
       .volume-slider:focus {
           outline: none;
@@ -53,6 +71,10 @@
         box-shadow: 0 2px 6px rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.15);
         margin-top: -16px; /* center thumb on track */
         touch-action: none; /* Prevent scroll interference on mobile */
+        cursor: grab;
+      }
+      .volume-slider:active::-webkit-slider-thumb {
+        cursor: grabbing;
       }
       .volume-slider:disabled::-webkit-slider-thumb {
         background-color: #f3f4f6; /* gray-100 */
@@ -69,6 +91,10 @@
         border: 1px solid rgba(0, 0, 0, 0.08);
         box-shadow: 0 2px 6px rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.15);
         touch-action: none;
+        cursor: grab;
+      }
+      .volume-slider:active::-moz-range-thumb {
+        cursor: grabbing;
       }
       .volume-slider:disabled::-moz-range-thumb {
         background-color: #f3f4f6;
@@ -82,19 +108,17 @@
         min-width: 48px;
         touch-action: manipulation;
       }
+      
+      /* Fix for iOS Safari to prevent page zoom on orientation change */
+      @supports (-webkit-touch-callout: none) {
+        .no-zoom-on-rotate {
+          min-height: 100vh;
+          width: 100vw;
+        }
+      }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-indigo-50/50">
+<body class="bg-indigo-50/50 no-zoom-on-rotate">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
