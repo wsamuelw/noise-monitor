@@ -1,42 +1,48 @@
 ```gitignore
 # Dependencies
 node_modules/
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+target/
+.gradle/
 
-# Build outputs
+# Build artifacts
 dist/
 build/
-*.js.map
-*.tsbuildinfo
+*.pyc
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
 
-# Environment variables
-.env
-.env.local
-*.env.*
-
-# IDE files
+# Editor/IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*.tmp
+
+# System files
+.DS_Store
+Thumbs.db
+.env
+.env.local
+*.env.*
 
 # Logs
 *.log
 
-# Temporary files
-*.tmp
-
 # Coverage
 coverage/
 htmlcov/
-*.coverage
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
+.coverage
 
 # Compressed files
 *.zip
