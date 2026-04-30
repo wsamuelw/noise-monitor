@@ -44,7 +44,12 @@ const App: React.FC = () => {
       const warmupUtterance = new SpeechSynthesisUtterance('');
       window.speechSynthesis.speak(warmupUtterance);
     }
-    startListening();
+    
+    // Additional iOS fix: ensure AudioContext can be created
+    // Some iOS versions need a small delay after speech synthesis
+    setTimeout(() => {
+      startListening();
+    }, 100);
   };
   
   const statusText = () => {
@@ -91,7 +96,7 @@ const App: React.FC = () => {
               threshold={threshold}
               onThresholdChange={setThreshold}
               isLoud={isLoud}
-              disabled={false}
+              disabled={!isListening}
             />
             
             <div className="w-full space-y-3 pt-2">
@@ -105,6 +110,7 @@ const App: React.FC = () => {
                 onChange={(e) => setMessage(e.target.value)}
                 className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 text-slate-800 placeholder-slate-400 text-lg transition-all"
                 placeholder="e.g. Quiet time, please"
+                disabled={!isListening}
               />
             </div>
           </div>
@@ -119,7 +125,7 @@ const App: React.FC = () => {
                 : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'
             }`}
           >
-            {isListening ? 'Stop' : 'Start'}
+            {isListening ? 'Stop Monitoring' : 'Start Monitoring'}
           </button>
           
           <div className="h-10 flex items-center justify-center text-sm">

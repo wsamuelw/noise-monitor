@@ -66,6 +66,11 @@ export const useAudioAnalyzer = () => {
     setError(null);
     
     try {
+      // Check if mediaDevices is available (requires HTTPS or localhost)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media devices API not available. Please use HTTPS.');
+      }
+
       // 1. Request microphone with mobile-optimized constraints
       // iOS Safari is very strict - we must use minimal constraints
       // Some iOS versions reject streams with echoCancellation/noiseSuppression set to false
@@ -81,7 +86,7 @@ export const useAudioAnalyzer = () => {
       // Use webkitAudioContext for older iOS Safari versions
       const audioCtxConstructor = window.AudioContext || (window as any).webkitAudioContext;
       if (!audioCtxConstructor) {
-        throw new Error('Web Audio API not supported');
+        throw new Error('Web Audio API not supported in this browser');
       }
       const context = new audioCtxConstructor();
       audioContextRef.current = context;
@@ -116,9 +121,12 @@ export const useAudioAnalyzer = () => {
       } else if (err instanceof Error && err.name === 'NotSupportedError') {
           setStatus(AppStatus.Error);
           setError('Audio configuration not supported. Try updating your browser.');
+      } else if (err instanceof Error && err.message.includes('HTTPS')) {
+          setStatus(AppStatus.Error);
+          setError('Microphone access requires HTTPS. Please use a secure connection.');
       } else {
           setStatus(AppStatus.Error);
-          setError('Could not access the microphone. Please ensure you\'re using HTTPS.');
+          setError('Could not access the microphone. Please ensure you\'re using HTTPS and have granted permission.');
       }
     }
   }, [status, stopListening, analyze]);
