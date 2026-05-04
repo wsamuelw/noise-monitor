@@ -128,7 +128,13 @@ function speakAlert() {
   const message = els.alertMessageInput?.value?.trim() || 'Quiet';
 
   if (!('speechSynthesis' in window)) {
+    console.warn('Speech synthesis not supported');
     return;
+  }
+
+  // Ensure voices are loaded
+  if (!state.voices || state.voices.length === 0) {
+    loadVoices();
   }
 
   try {
@@ -140,15 +146,28 @@ function speakAlert() {
     if (preferredVoice) {
       utterance.voice = preferredVoice;
       utterance.lang = preferredVoice.lang;
+      console.log('Using voice:', preferredVoice.name);
     } else {
       utterance.lang = 'en-US';
+      console.log('Using default voice');
     }
     
     utterance.rate = 0.92;
     utterance.pitch = 1.02;
+    
+    // Handle speech errors
+    utterance.onerror = (e) => {
+      console.error('Speech error:', e.error);
+    };
+    
+    utterance.onend = () => {
+      console.log('Speech completed');
+    };
+    
     window.speechSynthesis.speak(utterance);
-  } catch {
-    // Silently fail if speech synthesis fails
+    console.log('Speaking:', message);
+  } catch (error) {
+    console.error('Speech synthesis failed:', error);
   }
 }
 
@@ -368,6 +387,11 @@ document.addEventListener('visibilitychange', handleVisibilityChange);
 if ('speechSynthesis' in window) {
   loadVoices();
   window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+  
+  // Debug: Log available voices
+  window.speechSynthesis.addEventListener('voiceschanged', () => {
+    console.log('Available voices:', state.voices.map(v => v.name));
+  });
 }
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
